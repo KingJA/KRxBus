@@ -1,6 +1,7 @@
 package com.kingja.krxbus;
 
-import rx.Observable;
+import rx.Subscription;
+import rx.functions.Action1;
 import rx.subjects.PublishSubject;
 import rx.subjects.SerializedSubject;
 import rx.subjects.Subject;
@@ -21,6 +22,7 @@ public class RxBus {
 
     /**
      * 获得单例
+     *
      * @return
      */
     public static RxBus getDefault() {
@@ -36,31 +38,27 @@ public class RxBus {
     }
 
     /**
-     * 获得一个被观察者
-     * @param eventType 事件的类型，进行筛选用
+     * 注册一个观察者
+     *
+     * @param eventType 要接收的事件类型
+     * @param action    要处理的回调
      * @param <T>
      * @return
      */
-    public <T> Observable<T> toObservable(Class<T> eventType) {
-        return mRxBusObserverable.ofType(eventType);
+    public <T> Subscription register(Class<T> eventType, Action1<T> action) {
+        return mRxBusObserverable.ofType(eventType).subscribe(action);
     }
 
     /**
      * 发送
+     *
      * @param object
      */
     public void post(Object object) {
-        if (hasObservers()) {
+        if (mRxBusObserverable.hasObservers()) {
             mRxBusObserverable.onNext(object);
         }
     }
 
-    /**
-     * 判断是否有观察者
-     * @return
-     */
-    public boolean hasObservers() {
-        return mRxBusObserverable.hasObservers();
-    }
 
 }

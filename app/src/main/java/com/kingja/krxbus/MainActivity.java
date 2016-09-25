@@ -6,27 +6,34 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
+import rx.Subscription;
 import rx.functions.Action1;
 
 public class MainActivity extends AppCompatActivity {
     private String TAG=getClass().getSimpleName();
+    private Subscription mSubscription;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        RxBus.getDefault().toObservable(Float.class).subscribe(new Action1<Object>() {
+        mSubscription = RxBus.getDefault().register(String.class, new Action1<String>() {
             @Override
-            public void call(Object o) {
-                if (o instanceof EventMsg) {
-                    EventMsg msg= (EventMsg) o;
-                    Log.e(TAG, "call: "+msg.getContent());
-                }
+            public void call(String eventMsg) {
+                Log.e(TAG, "收到特定事件: " + eventMsg);
             }
         });
     }
     public void onSecond(View view) {
         Intent intent = new Intent(this, SecondActivity.class);
         startActivity(intent);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (!mSubscription.isUnsubscribed()) {
+            mSubscription.unsubscribe();
+        }
     }
 }

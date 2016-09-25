@@ -17,13 +17,10 @@ public class SecondActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second);
-        mSubscription = RxBus.getDefault().toObservable(EventMsg.class).subscribe(new Action1<Object>() {
+         mSubscription = RxBus.getDefault().register(EventMsg.class, new Action1<EventMsg>() {
             @Override
-            public void call(Object o) {
-                if (o instanceof EventMsg) {
-                    EventMsg msg = (EventMsg) o;
-                    Log.e(TAG, "call: " + msg.getContent());
-                }
+            public void call(EventMsg eventMsg) {
+                Log.e(TAG, "收到特定事件: " + eventMsg.getContent());
             }
         });
     }
