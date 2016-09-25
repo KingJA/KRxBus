@@ -17,14 +17,15 @@ public class SecondActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second);
-         mSubscription = RxBus.getDefault().register(EventMsg.class, new Action1<EventMsg>() {
+         mSubscription = RxBus.getDefault().register(EventMsg.class,SecondActivity.class, new Action1<EventMsg>() {
             @Override
             public void call(EventMsg eventMsg) {
-                Log.e(TAG, "收到特定事件: " + eventMsg.getContent());
+                Log.e(TAG, "收到事件: " + eventMsg.getContent());
             }
         });
     }
     public void onThird(View view) {
+        RxBus.getDefault().postSticky(new EventMsg("延迟消息"),ThirdActivity.class);
         Intent intent = new Intent(this, ThirdActivity.class);
         startActivity(intent);
     }
@@ -35,8 +36,6 @@ public class SecondActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (!mSubscription.isUnsubscribed()) {
-            mSubscription.unsubscribe();
-        }
+        RxBus.getDefault().unsubscribe(SecondActivity.class);
     }
 }

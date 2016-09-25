@@ -17,10 +17,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mSubscription = RxBus.getDefault().register(String.class, new Action1<String>() {
+        mSubscription = RxBus.getDefault().register(String.class, MainActivity.class,new Action1<String>() {
             @Override
             public void call(String eventMsg) {
-                Log.e(TAG, "收到特定事件: " + eventMsg);
+                Log.e(TAG, "收到事件: " + eventMsg);
             }
         });
     }
@@ -32,8 +32,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (!mSubscription.isUnsubscribed()) {
-            mSubscription.unsubscribe();
-        }
+        RxBus.getDefault().unsubscribe(SecondActivity.class);
     }
 }

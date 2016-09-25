@@ -1,5 +1,10 @@
 package com.kingja.krxbus;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import rx.Observable;
+import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action1;
 import rx.subjects.PublishSubject;
@@ -14,11 +19,16 @@ import rx.subjects.Subject;
  */
 public class RxBus {
     private volatile static RxBus mRxBus;
+    private Map<Class<?>, Subscription> mSubscriptionMap;
+    private Map<Class<?>, Object> mStickyEventMap;
+    private Subject<Object, Object> mRxBusObserverable;
 
     private RxBus() {
+        mSubscriptionMap = new ConcurrentHashMap();
+        mStickyEventMap = new ConcurrentHashMap();
+        mRxBusObserverable = new SerializedSubject<>(PublishSubject.create());
     }
 
-    private Subject<Object, Object> mRxBusObserverable = new SerializedSubject<>(PublishSubject.create());
 
     /**
      * 获得单例
@@ -45,12 +55,36 @@ public class RxBus {
      * @param <T>
      * @return
      */
-    public <T> Subscription register(Class<T> eventType, Action1<T> action) {
-        return mRxBusObserverable.ofType(eventType).subscribe(action);
+    public <T> Subscription register(Class<T> eventType, Class<?> reciver, Action1<T> action) {
+        Subscription subscribe = mRxBusObserverable.ofType(eventType).subscribe(action);
+        mSubscriptionMap.put(reciver, subscribe);
+
+        return subscribe;
+    }
+
+    public <T> Observable<T> registerSticky(final Class<T> eventType, Class<?> reciver) {
+        final Object event = mStickyEventMap.get(reciver);
+        if (event != null) {
+            return mRxBusObserverable.ofType(eventType).mergeWith(Observable.create(new Observable.OnSubscribe<T>() {
+                @Override
+                public void call(Subscriber<? super T> subscriber) {
+                    subscriber.onNext(eventType.cast(event));
+                }
+            }));
+        }
+        return mRxBusObserverable.ofType(eventType);
+    }
+
+    public void unsubscribe(Class<?> context) {
+        Subscription subscription = mSubscriptionMap.get(context);
+        if (subscription != null && !subscription.isUnsubscribed()) {
+            subscription.unsubscribe();
+        }
+        mStickyEventMap.remove(context);
     }
 
     /**
-     * 发送
+     * 发送普通事件
      *
      * @param object
      */
@@ -58,6 +92,19 @@ public class RxBus {
         if (mRxBusObserverable.hasObservers()) {
             mRxBusObserverable.onNext(object);
         }
+    }
+
+
+    /**
+     * 发送延迟事件
+     *
+     * @param object
+     */
+    public void postSticky(Object object, Class<?> receiver) {
+        synchronized (RxBus.class) {
+            mStickyEventMap.put(receiver, object);
+        }
+        post(object);
     }
 
 
