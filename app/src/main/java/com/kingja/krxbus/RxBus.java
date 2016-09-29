@@ -89,9 +89,12 @@ public class RxBus {
      * @param object
      */
     public void post(Object object) {
-        if (mRxBusObserverable.hasObservers()) {
-            mRxBusObserverable.onNext(object);
+        synchronized (RxBus.class) {
+            if (mRxBusObserverable.hasObservers()) {
+                mRxBusObserverable.onNext(object);
+            }
         }
+
     }
 
 
