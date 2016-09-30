@@ -26,7 +26,7 @@ public class RxBus {
     private RxBus() {
         mSubscriptionMap = new ConcurrentHashMap();
         mStickyEventMap = new ConcurrentHashMap();
-        mRxBusObserverable = new SerializedSubject<>(PublishSubject.create());
+        mRxBusObserverable = new SerializedSubject<>(PublishSubject.create());//线程安全
     }
 
 
